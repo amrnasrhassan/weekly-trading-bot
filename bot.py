@@ -116,7 +116,7 @@ signal_text = "\n===== إشارة هذا الأسبوع =====\n"
 if len(selected_now) == 0:
     signal_text += "لا توجد أصول مؤهلة — ابقَ في كاش.\n"
 else:
-    allocation = equity_series.iloc[-1] / len(selected_now)
+    allocation = INITIAL_CAPITAL / len(selected_now)
     for ticker in selected_now:
         price = current_prices[ticker]
         shares = allocation // price
