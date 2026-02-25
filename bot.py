@@ -80,7 +80,40 @@ sharpe = (returns.mean() * 52) / vol if vol != 0 else 0
 rolling_max = equity_series.cummax()
 dd = (equity_series - rolling_max) / rolling_max
 max_dd = dd.min()
+# ===============================
+# إشارة هذا الأسبوع
+# ===============================
 
+i = len(prices) - 1
+current_prices = prices.iloc[i]
+current_mom = momentum.iloc[i]
+current_ma = ma200.iloc[i]
+
+eligible = current_prices[current_prices > current_ma].index
+
+if len(eligible) > 0:
+    ranked = current_mom[eligible].sort_values(ascending=False)
+    selected = ranked.head(TOP_N).index
+else:
+    selected = []
+
+signal_text = "\n\n===== إشارة هذا الأسبوع =====\n"
+
+if len(selected) == 0:
+    signal_text += "لا توجد أصول مؤهلة — ابقَ في كاش.\n"
+else:
+    allocation = capital / len(selected)
+    for ticker in selected:
+        price = current_prices[ticker]
+        shares = allocation // price
+        invested = shares * price
+
+        signal_text += f"""
+الأصل: {ticker}
+السعر الحالي: {price:.2f}$
+عدد الأسهم المقترح: {int(shares)}
+قيمة الاستثمار: {invested:.2f}$
+"""
 report = f"""
 📊 Weekly Trading Report
 =========================
@@ -94,16 +127,4 @@ Total Return: {total_return*100:.2f}%
 Current Equity: {equity_series.iloc[-1]:.2f}$
 """
 
-msg = EmailMessage()
-msg["Subject"] = "📊 Weekly Trading Report"
-msg["From"] = EMAIL_ADDRESS
-msg["To"] = EMAIL_ADDRESS
-msg.set_content(report)
-
-context = ssl.create_default_context()
-
-with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-    server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-    server.send_message(msg)
-
-print("Email Sent Successfully")
+report += signal_text
